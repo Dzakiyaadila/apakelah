@@ -1,0 +1,249 @@
+openapi: 3.0.3
+info:
+  title: CareerFit AI API
+  version: "0.1.0"
+  description: |
+    Status legend:
+    ✅ Sudah diimplementasi & bisa dites
+    🚧 Belum diimplementasi (masih dalam progres)
+servers:
+  - url: http://127.0.0.1:8000/api
+    description: Local dev
+
+tags:
+  - name: Auth
+  - name: Dashboard
+  - name: CV
+  - name: Jobs
+  - name: Applications
+
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: "✅ Register user baru"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, example: "Lala" }
+                email: { type: string, example: "lala@mail.com" }
+                password: { type: string, example: "secret123" }
+      responses:
+        "201":
+          description: User berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      name: { type: string }
+                      email: { type: string }
+                  token: { type: string }
+        "422":
+          description: Validasi gagal
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: "✅ Login"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Login sukses
+        "422":
+          description: Email/password salah
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: "✅ Data user yang sedang login"
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+        "401": { description: Unauthenticated }
+
+  /logout:
+    post:
+      tags: [Auth]
+      summary: "✅ Logout (revoke token)"
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: "🚧 Ringkasan dashboard (profile completeness, job matches, dll)"
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile_completeness: { type: integer, example: 78 }
+                  job_matches_count: { type: integer, example: 25 }
+                  active_applications_count: { type: integer, example: 14 }
+                  recommended_jobs: { type: array, items: { type: object } }
+                  tips: { type: array, items: { type: string } }
+
+  /cv:
+    get:
+      tags: [CV]
+      summary: "🚧 List semua CV milik user"
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+    post:
+      tags: [CV]
+      summary: "🚧 Simpan/update CV dari Builder"
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                personal_info: { type: object }
+                summary: { type: string }
+                skills: { type: array, items: { type: string } }
+                experience: { type: array, items: { type: object } }
+                education: { type: array, items: { type: object } }
+                projects: { type: array, items: { type: object } }
+      responses: { "201": { description: Created } }
+
+  /cv/{id}:
+    get:
+      tags: [CV]
+      summary: "🚧 Detail satu CV"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+  /cv/upload:
+    post:
+      tags: [CV]
+      summary: "🚧 Upload CV (PDF/DOCX) untuk di-parse"
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses: { "201": { description: Created } }
+
+  /cv/{id}/analyze:
+    post:
+      tags: [CV]
+      summary: "🚧 Analisis ATS Score (via Gemini)"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id: { type: integer, nullable: true }
+      responses: { "200": { description: OK } }
+
+  /cv/{id}/generate:
+    post:
+      tags: [CV]
+      summary: "🚧 Generate CV yang dioptimasi untuk lowongan tertentu"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: "🚧 List lowongan (dengan filter & search)"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: location, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string } }
+        - { name: work_mode, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: "🚧 Detail lowongan"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+  /jobs/{id}/match:
+    get:
+      tags: [Jobs]
+      summary: "🚧 Match score CV terhadap lowongan"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: cv_id, in: query, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+  /applications:
+    get:
+      tags: [Applications]
+      summary: "🚧 List tracker lamaran"
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { description: OK } }
+    post:
+      tags: [Applications]
+      summary: "🚧 Tambah lamaran (manual/dari lowongan)"
+      security: [{ bearerAuth: [] }]
+      responses: { "201": { description: Created } }
+
+  /applications/{id}:
+    patch:
+      tags: [Applications]
+      summary: "🚧 Update status/data lamaran"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+    delete:
+      tags: [Applications]
+      summary: "🚧 Hapus lamaran"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses: { "200": { description: OK } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
