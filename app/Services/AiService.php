@@ -98,7 +98,6 @@ class AiService
 
     private function parseJsonSafely(string $text): array
     {
-        // Kadang model bungkus JSON dengan ```json ... ``` — bersihkan dulu
         $clean = preg_replace('/^```json|```$/m', '', trim($text));
         $decoded = json_decode(trim($clean), true);
 
