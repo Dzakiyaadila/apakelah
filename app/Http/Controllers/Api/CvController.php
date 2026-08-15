@@ -110,6 +110,36 @@ class CvController extends Controller
         ], 201);
     }
 
+
+    // PATCH /api/cv/{id}
+    public function update(Request $request, $id)
+    {
+        $cv = Cv::where('user_id', $request->user()->id)->findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'nullable|string|max:255',
+            'personal_info' => 'nullable|array',
+            'summary' => 'nullable|string',
+            'skills' => 'nullable|array',
+            'experience' => 'nullable|array',
+            'education' => 'nullable|array',
+            'projects' => 'nullable|array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $cv->update($request->only([
+            'title', 'personal_info', 'summary', 'skills', 'experience', 'education', 'projects',
+        ]));
+
+        return response()->json($cv);
+    }
+
     // POST /api/cv/{id}/analyze
     public function analyze(Request $request, $id)
     {
@@ -176,6 +206,18 @@ class CvController extends Controller
             'generated_cv_id' => $newCv->id,
             'download_url' => "/api/cv/{$newCv->id}/download",
             'highlighted_keywords' => $job->required_skills ?? [],
+        ]);
+    }
+    // GET /api/cv/{id}/download
+    public function download(Request $request, $id)
+    {
+        $cv = Cv::where('user_id', $request->user()->id)->findOrFail($id);
+
+        $content = $cv->parsed_text ?: $this->buildTextFromBuilder($cv);
+
+        return response($content, 200, [
+            'Content-Type' => 'text/plain',
+            'Content-Disposition' => 'attachment; filename="cv_' . $cv->id . '.txt"',
         ]);
     }
 

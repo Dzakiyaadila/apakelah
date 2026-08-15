@@ -10,10 +10,10 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    // GET /api/dashboard
-    public function index(Request $request)
+public function index(Request $request)
     {
-        $userId = $request->user()->id;
+        $user = $request->user();
+        $userId = $user->id;
 
         $latestCv = Cv::where('user_id', $userId)->orderByDesc('updated_at')->first();
 
@@ -21,14 +21,27 @@ class DashboardController extends Controller
         $recommendedJobs = $this->getRecommendedJobs($latestCv);
         $jobMatchesCount = $recommendedJobs->count();
 
+        $newThisWeek = $recommendedJobs->filter(function ($job) {
+            $jobModel = Job::find($job['id']);
+            return $jobModel && $jobModel->posted_at && $jobModel->posted_at->gte(now()->subDays(7));
+        })->count();
+
         $activeApplicationsCount = Application::where('user_id', $userId)
             ->whereIn('status', ['applied', 'interview'])
             ->count();
 
+        $interviewsScheduledCount = Application::where('user_id', $userId)
+            ->where('status', 'interview')
+            ->count();
+
         return response()->json([
+            'greeting_name' => $user->name,
+            'target_roles' => $user->target_roles ?? [],
             'profile_completeness' => $profileCompleteness,
             'job_matches_count' => $jobMatchesCount,
+            'job_matches_new_this_week' => $newThisWeek,
             'active_applications_count' => $activeApplicationsCount,
+            'interviews_scheduled_count' => $interviewsScheduledCount,
             'recommended_jobs' => $recommendedJobs->values(),
             'tips' => [
                 'Selesaikan CV Builder untuk meningkatkan skor akurasi lowongan',

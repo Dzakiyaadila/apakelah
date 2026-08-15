@@ -83,6 +83,37 @@ class AuthController extends Controller
         return response()->json($request->user());
     }
 
+    // PATCH /api/me
+    public function updateProfile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $request->user()->id,
+            'target_roles' => 'sometimes|array',
+            'target_roles.*' => 'string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $request->user()->update($request->only(['name', 'email', 'target_roles']));
+
+        return response()->json($request->user());
+    }
+
+    // DELETE /api/me
+    public function deleteAccount(Request $request)
+    {
+        $request->user()->tokens()->delete();
+        $request->user()->delete();
+
+        return response()->json(['message' => 'account deleted']);
+    }
+
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
