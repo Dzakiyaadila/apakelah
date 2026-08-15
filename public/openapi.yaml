@@ -72,13 +72,38 @@ paths:
           description: Email/password salah
 
   /me:
-    get:
-      tags: [Auth]
-      summary: "✅ Data user yang sedang login"
-      security: [{ bearerAuth: [] }]
-      responses:
-        "200": { description: OK }
-        "401": { description: Unauthenticated }
+      get:
+        tags: [Auth]
+        summary: "✅ Data user yang sedang login"
+        security: [{ bearerAuth: [] }]
+        responses:
+          "200": { description: OK }
+          "401": { description: Unauthenticated }
+      patch:
+        tags: [Auth]
+        summary: "✅ Update profil (name, email, target_roles)"
+        security: [{ bearerAuth: [] }]
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  email: { type: string }
+                  target_roles:
+                    type: array
+                    items: { type: string }
+                    example: ["Product Designer", "Backend Engineer"]
+        responses:
+          "200": { description: OK }
+          "422": { description: Validasi gagal }
+      delete:
+        tags: [Auth]
+        summary: "✅ Hapus akun permanen"
+        security: [{ bearerAuth: [] }]
+        responses:
+          "200": { description: OK }
 
   /logout:
     post:
@@ -136,11 +161,38 @@ paths:
   /cv/{id}:
     get:
       tags: [CV]
-      summary: "🚧 Detail satu CV"
+      summary: "✅ Detail satu CV"
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses: { "200": { description: OK } }
+    patch:
+      tags: [CV]
+      summary: "✅ Update CV yang sudah ada (dipakai setelah CV pertama kali dibuat)"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Semua field sama seperti POST /cv, semuanya opsional
+      responses: { "200": { description: OK } }
+
+  /cv/{id}/download:
+    get:
+      tags: [CV]
+      summary: "✅ Download CV (MVP: file .txt)"
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: File attachment
+          content:
+            text/plain:
+              schema: { type: string, format: binary }
 
   /cv/upload:
     post:
