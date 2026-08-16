@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Smalot\PdfParser\Parser as PdfParser;
 use PhpOffice\PhpWord\IOFactory;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CvController extends Controller
 {
@@ -208,17 +209,14 @@ class CvController extends Controller
             'highlighted_keywords' => $job->required_skills ?? [],
         ]);
     }
-    // GET /api/cv/{id}/download
+// GET /api/cv/{id}/download
     public function download(Request $request, $id)
     {
         $cv = Cv::where('user_id', $request->user()->id)->findOrFail($id);
 
-        $content = $cv->parsed_text ?: $this->buildTextFromBuilder($cv);
+        $pdf = Pdf::loadView('cv.pdf', ['cv' => $cv])->setPaper('a4');
 
-        return response($content, 200, [
-            'Content-Type' => 'text/plain',
-            'Content-Disposition' => 'attachment; filename="cv_' . $cv->id . '.txt"',
-        ]);
+        return $pdf->download('cv_' . $cv->id . '.pdf');
     }
 
     private function extractPdfText(string $fullPath): string
